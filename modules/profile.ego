@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-import os, sys
-import portage
-import portage.repository.config
-import json
+import os, sys, json
+import portage, portage.repository.config
+import click
 
 # Get the list of active repositories from portage
 # also, get the location of the main repo. The main repo
@@ -14,29 +13,52 @@ import json
 repo_config_object = portage.repository.config.load_repository_config(portage.settings)
 lrepo_locations = list(repo_config_object.repoLocationList())
 smain_repo_location = repo_config_object.mainRepoLocation()
-#print (lrepo_locations)
 
 #RESERVED KEYWORDS
 # Due to the special CLI syntax we use to access the repository profiles, we're forced to
 # reserve the following keywords. This will prevent epro from being confused.
 
+#These are options so they need to be reserved"
 lbanned_repo_names = [ "list", "show", "show-json", "get" ]
+
+lbanned_repo_names += ["arch", "build", "flavor", "mix-in", "subarch" ]
 
 #Defines a dictionary of repositories 
 
 drepos_with_profiles = {}
 for repo_loc in lrepo_locations:
-    if os.path.exists(repo_loc+"/profiles/profiles.ego.desc"):
+    if os.path.exists(repo_loc+"/profiles/epro/epro.jeson"):
         repo_name = repo_config_object.get_name_for_location(repo_loc)
         if repo_name in lbanned_repo_names:
-            print("Skipping repository %s because it uses a reserved epro keyword", repo_name)
-            print("Please change the repository name in profiles/repo_name if you want to use")
-            print("this repository")
+            click.secho("Skipping repository \"{}\" because it uses a reserved epro keyword".format(repo_name), fg='yellow')
+            click.secho("Please change the repository name in profiles/repo_name if you", fg='yellow')
+            click.secho("want to use this repository with epro. The following names are", fg='yellow')
+            click.secho("reserved epro keywords, and may not be used as a repository name:", fg='yellow')
+            click.secho("\t"+"\n\t".join(lbanned_repo_names), fg='red')
         else:
             drepos_with_profiles.update({repo_name : repo_loc})
 smain_repo_name = ""
-if os.path.exists(smain_repo_location+"/profiles/profiles.ego.desc"):
+if os.path.exists(smain_repo_location+"/profiles/epro/epro.jeson"):
     smain_repo_name = repo_config_object.get_name_for_location(smain_repo_location)
 
-print(drepos_with_profiles)
-print(smain_repo_name)
+#print(drepos_with_profiles)
+#print(smain_repo_name)
+
+@click.command()
+@click.argument('repo', nargs=1)
+@click.argument('action', nargs=-1)
+
+def main(repo, action):
+    if repo == "main":
+        if smain_repo_name == "":
+            click.secho("The main repository doesn't have a valid profile. Please pass a valid", fg="red")
+            click.secho("repository name as the first parameter or fix the main repository profile.", fg="red")
+            sys.exit()
+        else:
+            repo = smain_repo_name
+    if repo in drepos_with_profiles.keys():
+        click.echo(repo)
+    else:
+        click.secho("Repository {} doesn't exist or doesn't have a valid profile".format(repo), fg="red")
+if __name__ == '__main__':
+    main()
