@@ -1,0 +1,9 @@
+#Example default J(e)SON config for overriding profile
+#settings on a per-repository level. This is useful
+#to create default settings for stage3s.
+
+#DO NOT ADD THESE TO THE EGO REPOSITORY. This is only
+#an example. Real entries should be added to a folder
+#with the same name as the repository, and titled 
+#defaults.jeson e.g. :
+# /usr/share/ego/modules-config/profile.ego/repo/core-kit/defaults.jeson
